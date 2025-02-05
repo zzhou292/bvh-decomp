@@ -4,6 +4,7 @@ from collections import deque
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import matplotlib.pyplot as plt
 import numpy as np
+import heapq
 
 @dataclass(frozen=True, eq=True)
 class Node:
@@ -12,6 +13,7 @@ class Node:
     right: Optional['Node'] = None
     is_leaf: bool = False
     obj_index: int = -1
+    leaf_count: int = 1  # New field with default value 1
 
 class BVHBuilder:
     def __init__(self, aabbs: List[Tuple]):
@@ -48,7 +50,7 @@ class BVHBuilder:
 
             if len(items) == 1:
                 aabb, idx = items[0]
-                node = Node(aabb=aabb, is_leaf=True, obj_index=idx)
+                node = Node(aabb=aabb, is_leaf=True, obj_index=idx, leaf_count=1)
             else:
                 combined_aabb = items[0][0]
                 
@@ -72,6 +74,13 @@ class BVHBuilder:
                     object.__setattr__(parent, 'left', node)
                 else:
                     object.__setattr__(parent, 'right', node)
+                new_parent = Node(
+                    aabb=parent.aabb,
+                    left=parent.left,
+                    right=parent.right,
+                    leaf_count=(node.leaf_count + (parent.left.leaf_count if parent.left else 0))
+                )
+                object.__setattr__(parent, 'leaf_count', new_parent.leaf_count)
             else:
                 root = node
         return root
@@ -229,4 +238,42 @@ class BVHBuilder:
                 traverse(node.right, current_depth + 1)
         
         traverse(root, 0)
+        return groups
+
+    def get_subdomains_greedy(self, root: Node, num_subdomains: int) -> List[List[int]]:
+        """Greedy decomposition using max-heap of leaf counts"""
+        # Use unique counter to avoid comparing nodes directly
+        counter = 0
+        heap = [(-root.leaf_count, counter, root)]
+        heapq.heapify(heap)
+        counter += 1
+        
+        # Split largest nodes until we reach target count
+        while len(heap) < num_subdomains and heap:
+            current_count, _, current_node = heapq.heappop(heap)
+            
+            if current_node.is_leaf:
+                heapq.heappush(heap, (current_count, counter, current_node))
+                counter += 1
+                break
+                
+            # Push children with their leaf counts
+            for child in [current_node.left, current_node.right]:
+                if child:
+                    heapq.heappush(heap, (-child.leaf_count, counter, child))
+                    counter += 1
+        
+        # Collect all leaves under each node in the heap
+        groups = []
+        for _, _, node in heap:
+            group = []
+            stack = [node]
+            while stack:
+                n = stack.pop()
+                if n.is_leaf:
+                    group.append(n.obj_index)
+                else:
+                    stack.extend([n.right, n.left])
+            groups.append(group)
+            
         return groups

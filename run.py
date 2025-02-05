@@ -95,8 +95,8 @@ class BVHAnimator:
             self.tree_ax.set_title(f"BVH Tree Structure at Time: {self.data_handler.get_frame_time(frame):.3f} seconds")
             
             # New subdomain visualization
-            num_subdomains = 4  # Can be 2, 4, 8, etc
-            groups = BVHBuilder(aabbs).get_subdomains(bvh_root, num_subdomains)
+            num_subdomains = 10  # Can be 2, 4, 8, etc
+            groups = BVHBuilder(aabbs).get_subdomains_greedy(bvh_root, num_subdomains)
             subdomain_vis.visualize(aabbs, groups)
             
             # Force both figures to update
