@@ -76,8 +76,10 @@ class BVHAnimator:
 
     def animate(self):
         subdomain_vis = SubdomainVisualizer()
+        bvh_root = None  # Initialize here
         
         def update_combined(frame):
+            nonlocal bvh_root  # Important for state retention
             # Clear both axes
             self.ax.clear()
             self.tree_ax.clear()
@@ -85,7 +87,10 @@ class BVHAnimator:
             # Update 3D visualization
             self._setup_axes()
             aabbs = self.data_handler.get_frame_aabbs(frame)
-            bvh_root = BVHBuilder(aabbs).build_top_down()
+            if bvh_root is None:  # First frame
+                bvh_root = BVHBuilder(aabbs).build_top_down()
+            else:  # Subsequent frames
+                bvh_root = BVHBuilder(aabbs).update_incremental(bvh_root)
             self._draw_original_boxes(aabbs)
             self._draw_bvh(bvh_root)
             self.ax.set_title(f'Time: {self.data_handler.get_frame_time(frame):.3f} seconds')
@@ -95,7 +100,7 @@ class BVHAnimator:
             self.tree_ax.set_title(f"BVH Tree Structure at Time: {self.data_handler.get_frame_time(frame):.3f} seconds")
             
             # New subdomain visualization
-            num_subdomains = 10  # Can be 2, 4, 8, etc
+            num_subdomains = 3  # Can be 2, 4, 8, etc
             groups = BVHBuilder(aabbs).get_subdomains_greedy(bvh_root, num_subdomains)
             subdomain_vis.visualize(aabbs, groups)
             
@@ -109,7 +114,7 @@ class BVHAnimator:
             self.fig,
             update_combined,
             frames=self.data_handler.num_frames,
-            interval=5,
+            interval=0,
             blit=False
         )
         plt.show()

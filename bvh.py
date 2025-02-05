@@ -13,7 +13,7 @@ class Node:
     right: Optional['Node'] = None
     is_leaf: bool = False
     obj_index: int = -1
-    leaf_count: int = 1  # New field with default value 1
+    leaf_count: int = 1
 
 class BVHBuilder:
     def __init__(self, aabbs: List[Tuple]):
@@ -277,3 +277,62 @@ class BVHBuilder:
             groups.append(group)
             
         return groups
+
+    def update_incremental(self, root: Node, threshold=0.3):
+        """Update existing tree structure with new AABBs"""
+        changed_nodes = []
+        
+        # 1. Update leaf AABBs and mark changed nodes
+        def update_leaves(node):
+            if node.is_leaf:
+                new_aabb = self.aabbs[node.obj_index]
+                if node.aabb != new_aabb:
+                    object.__setattr__(node, 'aabb', new_aabb)
+                    changed_nodes.append(node)
+        
+        # 2. Bottom-up refit of changed hierarchy
+        def refit(node):
+            if node.is_leaf:
+                return node.aabb
+            
+            new_left_aabb = refit(node.left)
+            new_right_aabb = refit(node.right)
+            merged = self.merge_aabbs(new_left_aabb, new_right_aabb)
+            
+            if merged != node.aabb or node in changed_nodes:
+                object.__setattr__(node, 'aabb', merged)
+                changed_nodes.append(node)
+            
+            return merged
+        
+        # 3. Partial rebuild for high-overlap nodes
+        def check_overlap(node):
+            if node.is_leaf:
+                return True
+            
+            overlap_ratio = self.calc_overlap(node.left.aabb, node.right.aabb)
+            if overlap_ratio > threshold:
+                return False
+            return check_overlap(node.left) and check_overlap(node.right)
+        
+        update_leaves(root)
+        refit(root)
+        
+        if not check_overlap(root):
+            return self.build_top_down()  # Full rebuild if overlap too high
+        
+        return root
+
+    @staticmethod
+    def calc_overlap(aabb1, aabb2):
+        """Calculate overlap ratio between two AABBs (0-1)"""
+        min_inter = [max(aabb1[0][i], aabb2[0][i]) for i in range(3)]
+        max_inter = [min(aabb1[1][i], aabb2[1][i]) for i in range(3)]
+        
+        intersection = max(0, (max_inter[0]-min_inter[0]) * 
+                           (max_inter[1]-min_inter[1]) * 
+                           (max_inter[2]-min_inter[2]))
+        
+        vol1 = BVHBuilder.aabb_volume(aabb1)
+        vol2 = BVHBuilder.aabb_volume(aabb2)
+        return intersection / min(vol1, vol2)
