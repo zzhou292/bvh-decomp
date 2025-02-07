@@ -69,6 +69,7 @@ class BVHAnimator:
         recursive_draw(root)
         
     def update(self, frame: int):
+
         self.ax.clear()
         self._setup_axes()
         
@@ -83,44 +84,42 @@ class BVHAnimator:
         self.ax.set_title(f'Time: {self.data_handler.get_frame_time(frame):.3f} seconds')
         return []
 
-    def animate(self):
+    def animate(self, plot_enabled=True):
         subdomain_vis = SubdomainVisualizer()
         bvh_root = None
-        domain_tracker = DomainTracker()  # Add tracker
+        domain_tracker = DomainTracker()
         
         def update_combined(frame):
             nonlocal bvh_root
-            self.ax.clear()
-            self.tree_ax.clear()
+            if plot_enabled:
+                self.ax.clear()
+                self.tree_ax.clear()
             
-            # Update 3D visualization
-            self._setup_axes()
+            current_time = self.data_handler.get_frame_time(frame)
+            print(f"Current simulation time: {current_time:.3f} seconds")
+            
             aabbs = self.data_handler.get_frame_aabbs(frame)
             if bvh_root is None:
                 bvh_root = BVHBuilder(aabbs).build_top_down()
             else:
                 bvh_root = BVHBuilder(aabbs).update_incremental(bvh_root)
             
-            # Get and track domains
             num_subdomains = 5
             groups = BVHBuilder(aabbs).get_subdomains_greedy(bvh_root, num_subdomains)
-            ordered_groups = domain_tracker.match_domains(groups)  # Apply tracking
-            
-            # Visualization uses ordered groups
-            self._draw_original_boxes(aabbs)
-            self._draw_bvh(bvh_root)
-            subdomain_vis.visualize(aabbs, ordered_groups)
-            
-            # Update tree visualization
-            BVHBuilder.draw_tree_structure(self.tree_ax, bvh_root)
-            self.tree_ax.set_title(f"BVH Tree Structure at Time: {self.data_handler.get_frame_time(frame):.3f} seconds")
-            
-            # Force both figures to update
-            self.fig.canvas.draw_idle()
-            self.tree_fig.canvas.draw_idle()
+            ordered_groups = domain_tracker.match_domains(groups)
+
+            if plot_enabled:
+                self._setup_axes()
+                self._draw_original_boxes(aabbs)
+                self._draw_bvh(bvh_root)
+                subdomain_vis.visualize(aabbs, ordered_groups)
+                BVHBuilder.draw_tree_structure(self.tree_ax, bvh_root)
+                self.tree_ax.set_title(f"BVH Tree Structure at Time: {current_time:.3f}s")
+                self.fig.canvas.draw_idle()
+                self.tree_fig.canvas.draw_idle()
+
             return []
 
-        # Create a single animation that updates both figures
         ani = animation.FuncAnimation(
             self.fig,
             update_combined,
@@ -128,7 +127,14 @@ class BVHAnimator:
             interval=0,
             blit=False
         )
-        plt.show()
+        if plot_enabled:
+            plt.show()
+        else:
+            # Manually run through all frames to prevent GC warning
+            for frame in range(self.data_handler.num_frames):
+                update_combined(frame)
+        
+        return ani
 
 class SubdomainVisualizer:
     def __init__(self):
@@ -203,4 +209,4 @@ class DomainTracker:
 if __name__ == "__main__":
     data_handler = AABBDataHandler("processed_output.csv")
     animator = BVHAnimator(data_handler)
-    animator.animate()
+    animation_obj = animator.animate(plot_enabled=False)  # Keep reference to animation
