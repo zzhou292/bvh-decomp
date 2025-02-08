@@ -19,9 +19,10 @@ class BVHAnimator:
         self.ax.set_proj_type('ortho')         
         self.ax.view_init(elev=15, azim=-45,   
                         vertical_axis='y')   
-        self.ax.set_xlim(-3, 3)
+        # -3 3 for xyz -> sce_40.csv
+        self.ax.set_xlim(-5, 12) 
         self.ax.set_ylim(-3, 3)
-        self.ax.set_zlim(-3, 3)
+        self.ax.set_zlim(-12, 3)
         self.ax.set_xlabel('X')
         self.ax.set_ylabel('Y')
         self.ax.set_zlabel('Z')
@@ -104,7 +105,7 @@ class BVHAnimator:
             else:
                 bvh_root = BVHBuilder(aabbs).update_incremental(bvh_root)
             
-            num_subdomains = 5
+            num_subdomains = 6
             groups = BVHBuilder(aabbs).get_subdomains_greedy(bvh_root, num_subdomains)
             ordered_groups = domain_tracker.match_domains(groups)
 
@@ -148,9 +149,9 @@ class SubdomainVisualizer:
         self.ax.set_proj_type('ortho')         
         self.ax.view_init(elev=15, azim=-45,   
                         vertical_axis='y')   
-        self.ax.set_xlim(-3, 3)
+        self.ax.set_xlim(-5, 12) 
         self.ax.set_ylim(-3, 3)
-        self.ax.set_zlim(-3, 3)
+        self.ax.set_zlim(-12, 3)
         self.ax.set_xlabel('X')
         self.ax.set_ylabel('Y')
         self.ax.set_zlabel('Z')
@@ -207,6 +208,6 @@ class DomainTracker:
 
 # Usage
 if __name__ == "__main__":
-    data_handler = AABBDataHandler("processed_output.csv")
+    data_handler = AABBDataHandler("sce_70.csv")
     animator = BVHAnimator(data_handler)
-    animation_obj = animator.animate(plot_enabled=False)  # Keep reference to animation
+    animation_obj = animator.animate(plot_enabled=True)  # Keep reference to animation

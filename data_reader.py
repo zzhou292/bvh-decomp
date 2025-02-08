@@ -6,7 +6,7 @@ class AABBDataHandler:
     def __init__(self, csv_path: str):
         self.df = pd.read_csv(csv_path, header=None, skiprows=1)
         self.num_frames = len(self.df)
-        self.num_objects = 40
+        self.num_objects = 70
         
     def get_frame_aabbs(self, frame: int) -> List[Tuple]:
         row = self.df.iloc[frame]
