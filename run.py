@@ -105,7 +105,7 @@ class BVHAnimator:
             else:
                 bvh_root = BVHBuilder(aabbs).update_incremental(bvh_root)
             
-            num_subdomains = 6
+            num_subdomains = 5
             groups = BVHBuilder(aabbs).get_subdomains_greedy(bvh_root, num_subdomains)
             ordered_groups = domain_tracker.match_domains(groups)
 

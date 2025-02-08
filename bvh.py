@@ -61,7 +61,7 @@ class BVHBuilder:
                 axis_lengths = [max_pt[i] - min_pt[i] for i in range(3)]
                 split_axis = axis_lengths.index(max(axis_lengths))
                 sorted_items = sorted(items, 
-                    key=lambda x: (x[0][0][split_axis] + x[0][1][split_axis])/2)
+                    key=lambda x: round((x[0][0][split_axis] + x[0][1][split_axis])/2 / 0.1) * 0.1)
                 
                 split_idx = len(sorted_items) // 2  # Split at midpoint
                 split_idx = max(1, min(split_idx, len(sorted_items)-1))
