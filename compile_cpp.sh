@@ -1,0 +1,1 @@
+g++ -o subdomain_visualizer cppimpl/main.cpp cppimpl/bvh_builder.cpp cppimpl/domain_tracker.cpp cppimpl/subdomain_visualizer.cpp cppimpl/aabb_data_handler.cpp -Icppimpl -I/usr/include -I/usr/include/eigen3 -lGL -lGLEW -lglfw

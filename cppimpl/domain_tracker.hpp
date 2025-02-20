@@ -1,32 +1,26 @@
 #pragma once
-#include <vector>
+#include "bvh_builder.hpp"
 #include <Eigen/Dense>
+#include <vector>
 
-class DomainTracker
-{
-    std::vector<std::vector<int>> prev_domains;
-    std::vector<std::vector<int>> previous_groups;
-    std::vector<int> assignment;
-    std::vector<std::vector<double>> cost_matrix;
+class DomainTracker {
+  std::vector<std::vector<int>> previous_groups;
+  std::vector<int> assignment;
+  std::vector<std::vector<double>> cost_matrix;
+  std::vector<const Node *> previous_nodes;
 
 public:
-    std::vector<std::vector<int>> match_domains(
-        const std::vector<std::vector<int>> &new_domains);
+  std::vector<std::vector<int>>
+  match_domains(const std::vector<std::vector<int>> &new_groups,
+                const std::vector<const Node *> &new_nodes);
 
 private:
-    static constexpr double HUNGARIAN_INFINITY = 1e10;
-    Eigen::MatrixXf create_cost_matrix(
-        const std::vector<std::vector<int>> &old_domains,
-        const std::vector<std::vector<int>> &new_domains);
+  static constexpr double HUNGARIAN_INFINITY = 1e10;
 
-    std::vector<int> symmetric_difference(
-        const std::vector<int> &a,
-        const std::vector<int> &b);
+  void update(const std::vector<std::vector<int>> &new_groups,
+              const std::vector<const Node *> &new_nodes);
+  void hungarian_solve();
 
-    void hungarian_method(
-        const std::vector<std::vector<float>> &cost_matrix,
-        std::vector<int> &assignment);
-
-    void update(const std::vector<std::vector<int>> &new_groups);
-    void hungarian_solve();
+  AABB compute_domain_aabb(const std::vector<int> &domain_indices,
+                           const std::vector<AABB> &aabbs) const;
 };

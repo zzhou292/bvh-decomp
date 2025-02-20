@@ -107,7 +107,7 @@ class BVHAnimator:
             
             num_subdomains = 5
             groups = BVHBuilder(aabbs).get_subdomains_greedy(bvh_root, num_subdomains)
-            ordered_groups = domain_tracker.match_domains(groups)
+            ordered_groups = domain_tracker.match_domains(groups, aabbs)
 
             if plot_enabled:
                 self._setup_axes()
@@ -158,7 +158,7 @@ class SubdomainVisualizer:
         
     def visualize(self, aabbs: List[Tuple], groups: List[List[int]]):
         # Get ordered domains based on previous state
-        ordered_groups = self.domain_tracker.match_domains(groups)
+        ordered_groups = self.domain_tracker.match_domains(groups, aabbs)
         
         self.ax.clear()
         self._setup_axes()
@@ -186,7 +186,7 @@ class DomainTracker:
                 cost_matrix[i,j] = len(set(old) ^ set(new))
         return cost_matrix
     
-    def match_domains(self, new_domains):
+    def match_domains(self, new_domains, aabbs):
         if self.prev_domains is None:
             # First frame, no previous domains to match
             self.prev_domains = new_domains
